@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>◆ ARISE — Solo Leveling System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="bg-glow-top"></div>
+  <div class="bg-glow-bottom"></div>
+
+  <!-- ═══ LOGIN SCREEN ════════════════════════════════════════════════════════ -->
+  <div id="loginScreen">
+    <div class="login-header">
+      <div class="sys-label">◆ S Y S T E M ◆</div>
+      <h1 class="sys-title">ARISE</h1>
+      <div class="sys-sub">SOLO LEVELING INTERFACE</div>
+    </div>
+
+    <div class="login-card">
+      <div class="login-title">◆ ENTER THE SYSTEM ◆</div>
+      <div class="login-subtitle">Identify yourself, Hunter</div>
+
+      <div class="input-group">
+        <label class="input-label">HUNTER NAME</label>
+        <input type="text" id="loginUsername" class="sys-input" placeholder="Enter your name..." maxlength="20" />
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">PASSWORD</label>
+        <input type="password" id="loginPassword" class="sys-input" placeholder="Enter password..." maxlength="30" />
+      </div>
+
+      <button class="btn-enter" onclick="login()">⚔️ ENTER SYSTEM</button>
+      <button class="btn-register" onclick="register()">◆ NEW HUNTER? REGISTER</button>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN APP ══════════════════════════════════════════════════════════════ -->
+  <div id="mainApp" class="hidden">
+
+    <header class="sys-header">
+      <div class="sys-label">◆ S Y S T E M ◆</div>
+      <h1 class="sys-title">ARISE</h1>
+      <div class="sys-sub">SOLO LEVELING INTERFACE</div>
+    </header>
+
+    <main class="card">
+
+      <!-- Profile Row -->
+      <div class="profile-row">
+        <div class="avatar" id="avatar">⚔️</div>
+        <div class="profile-info">
+          <div class="player-name" id="playerName">Hunter</div>
+          <div class="player-rank" id="playerRank">Shadow Monarch · RANK E</div>
+          <div class="player-level-row">
+            <span class="lv-label">LV</span>
+            <span class="lv-num" id="playerLevel">1</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <div class="stat-points-badge hidden" id="statBadge">+0 pts</div>
+          <button class="btn-logout" onclick="logout()">LOGOUT</button>
+        </div>
+      </div>
+
+      <!-- Bars -->
+      <div class="bars-section">
+        <div class="bar-group">
+          <div class="bar-labels">
+            <span class="bar-label">HP</span>
+            <span class="bar-val hp-fill" id="hpVal">100 / 100</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill hp-fill" id="hpBar" style="width:100%"><div class="shimmer"></div></div></div>
+        </div>
+        <div class="bar-group">
+          <div class="bar-labels">
+            <span class="bar-label">MP</span>
+            <span class="bar-val mp-fill" id="mpVal">50 / 50</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill mp-fill" id="mpBar" style="width:100%"><div class="shimmer"></div></div></div>
+        </div>
+        <div class="bar-group">
+          <div class="bar-labels">
+            <span class="bar-label">EXP</span>
+            <span class="bar-val xp-fill" id="xpVal">0 / 100 XP</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill xp-fill" id="xpBar" style="width:0%"><div class="shimmer"></div></div></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="status" onclick="switchTab('status')">STATUS</button>
+        <button class="tab" data-tab="quests" onclick="switchTab('quests')">QUESTS</button>
+        <button class="tab" data-tab="skills" onclick="switchTab('skills')">SKILLS</button>
+      </div>
+
+      <!-- Status Tab -->
+      <div class="tab-panel active" id="tab-status">
+        <div class="panel-title">◆ Player Stats <span id="statPtsLabel" class="pts-label"></span></div>
+        <div class="stat-grid" id="statGrid"></div>
+      </div>
+
+      <!-- Quests Tab -->
+      <div class="tab-panel" id="tab-quests">
+        <div class="panel-title-row">
+          <div class="panel-title">◆ Daily Quests</div>
+          <button class="btn-reset" onclick="resetQuests()">RESET</button>
+        </div>
+        <div id="questList"></div>
+      </div>
+
+      <!-- Skills Tab -->
+      <div class="tab-panel" id="tab-skills">
+        <div class="panel-title">◆ Skill Tree</div>
+        <div id="skillList"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Notifications -->
+  <div id="notifContainer"></div>
+
+  <!-- Level Up Overlay -->
+  <div id="levelUpOverlay" class="overlay hidden" onclick="closeLevelUp()">
+    <div class="overlay-inner">
+      <div class="overlay-label">◆ LEVEL UP ◆</div>
+      <div class="overlay-level" id="overlayLevel">2</div>
+      <div class="overlay-hint">TAP TO CONTINUE</div>
+    </div>
+    <div class="overlay-glow"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
