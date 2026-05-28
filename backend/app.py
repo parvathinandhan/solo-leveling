@@ -208,5 +208,7 @@ def allocate_stat():
     return jsonify({"message": f"{stat} increased to {player['stats'][stat]}!", "stat": stat, "new_value": player["stats"][stat], "player": player})
 
 if __name__ == "__main__":
-    print("🌑 Solo Leveling System — Backend Running on http://localhost:5000")
-    app.run(debug=True, port=5000)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    print("🌑 Solo Leveling System — Backend Running")
+    app.run(debug=False, host="0.0.0.0", port=port)
