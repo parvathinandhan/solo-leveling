@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://solo-leveling-production-7919.up.railway.app";
 
 const STAT_ICONS  = { STR:"⚔️", AGI:"💨", INT:"🧠", VIT:"❤️", PER:"👁️", LUK:"⭐" };
 const STAT_COLORS = { STR:"#ef4444", AGI:"#22c55e", INT:"#3b82f6", VIT:"#f97316", PER:"#a855f7", LUK:"#eab308" };
