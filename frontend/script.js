@@ -8,10 +8,17 @@ const RANK_COLORS = {
   "National Level":"#ef4444","Shadow Monarch":"#7c3aed"
 };
 
-let currentPlayer = null;
-let notifId = 0;
+function getToken() { return localStorage.getItem("arise_token"); }
+function setToken(t) { localStorage.setItem("arise_token", t); }
+function clearToken() { localStorage.removeItem("arise_token"); }
 
-// ── Show/Hide Screens ─────────────────────────────────────────────────────────
+function authHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${getToken()}`
+  };
+}
+
 function showLogin() {
   document.getElementById("loginScreen").classList.remove("hidden");
   document.getElementById("mainApp").classList.add("hidden");
@@ -22,21 +29,19 @@ function showApp() {
   document.getElementById("mainApp").classList.remove("hidden");
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
 async function login() {
   const username = document.getElementById("loginUsername").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
   if (!username || !password) { showNotif("Enter username and password!", "info"); return; }
-
   try {
     const res  = await fetch(`${API_BASE}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
     if (!res.ok) { showNotif(data.error, "info"); return; }
+    setToken(data.token);
     showNotif(`✦ ${data.message}`, "success");
     renderAll(data.player);
     showApp();
@@ -47,16 +52,15 @@ async function register() {
   const username = document.getElementById("loginUsername").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
   if (!username || !password) { showNotif("Enter username and password!", "info"); return; }
-
   try {
     const res  = await fetch(`${API_BASE}/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
     if (!res.ok) { showNotif(data.error, "info"); return; }
+    setToken(data.token);
     showNotif(`✦ ${data.message}`, "success");
     renderAll(data.player);
     showApp();
@@ -64,26 +68,24 @@ async function register() {
 }
 
 async function logout() {
-  await fetch(`${API_BASE}/logout`, { method: "POST", credentials: "include" });
-  currentPlayer = null;
+  await fetch(`${API_BASE}/logout`, { method: "POST", headers: authHeaders() });
+  clearToken();
   showLogin();
   showNotif("◆ Logged out successfully", "info");
 }
 
-// ── Fetch Player ──────────────────────────────────────────────────────────────
 async function fetchPlayer() {
+  if (!getToken()) { showLogin(); return; }
   try {
-    const res = await fetch(`${API_BASE}/player`, { credentials: "include" });
-    if (res.status === 401) { showLogin(); return; }
+    const res = await fetch(`${API_BASE}/player`, { headers: authHeaders() });
+    if (res.status === 401) { clearToken(); showLogin(); return; }
     const player = await res.json();
     renderAll(player);
     showApp();
   } catch (err) { showLogin(); }
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
 function renderAll(player) {
-  currentPlayer = player;
   renderProfile(player);
   renderBars(player);
   renderStats(player);
@@ -168,10 +170,9 @@ function renderSkills(p) {
   `).join("");
 }
 
-// ── Actions ───────────────────────────────────────────────────────────────────
 async function completeQuest(questId) {
   try {
-    const res  = await fetch(`${API_BASE}/complete-quest/${questId}`, { method: "POST", credentials: "include" });
+    const res  = await fetch(`${API_BASE}/complete-quest/${questId}`, { method: "POST", headers: authHeaders() });
     const data = await res.json();
     if (!res.ok) { showNotif(data.error, "info"); return; }
     showNotif(`✦ ${data.message}`, "success");
@@ -182,7 +183,7 @@ async function completeQuest(questId) {
 
 async function resetQuests() {
   try {
-    const res  = await fetch(`${API_BASE}/reset-quests`, { method: "POST", credentials: "include" });
+    const res  = await fetch(`${API_BASE}/reset-quests`, { method: "POST", headers: authHeaders() });
     const data = await res.json();
     showNotif("◆ Daily quests reset.", "info");
     renderAll(data.player);
@@ -193,8 +194,7 @@ async function allocateStat(stat) {
   try {
     const res  = await fetch(`${API_BASE}/allocate-stat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      headers: authHeaders(),
       body: JSON.stringify({ stat })
     });
     const data = await res.json();
@@ -204,7 +204,6 @@ async function allocateStat(stat) {
   } catch (err) { console.error(err); }
 }
 
-// ── UI Helpers ────────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + name));
@@ -227,12 +226,10 @@ function showNotif(msg, type = "info") {
   setTimeout(() => div.remove(), 3000);
 }
 
-// Allow pressing Enter key to login
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !document.getElementById("loginScreen").classList.contains("hidden")) {
     login();
   }
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 fetchPlayer();

@@ -1,13 +1,13 @@
-from flask import Flask, jsonify, request, session
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import json
 import os
 import math
 import hashlib
+import secrets
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
-app.secret_key = "arise_shadow_monarch_2024"
+CORS(app, origins="*")
 
 DATA_FILE = "players_data.json"
 
@@ -49,7 +49,7 @@ def load_all():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r") as f:
             return json.load(f)
-    return {"users": {}}
+    return {"users": {}, "tokens": {}}
 
 def save_all(data):
     with open(DATA_FILE, "w") as f:
@@ -90,15 +90,20 @@ def apply_xp(player, amount):
             skill["unlocked"] = True
     return player, leveled
 
-def get_current_player():
-    username = session.get("username")
-    if not username:
+def get_user_from_token():
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    if not token:
         return None, None, None
     all_data = load_all()
+    username = all_data.get("tokens", {}).get(token)
+    if not username:
+        return None, None, None
     user = all_data["users"].get(username)
     if not user:
         return None, None, None
     return username, all_data, user["player"]
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -112,15 +117,18 @@ def register():
     if len(password) < 4:
         return jsonify({"error": "Password must be at least 4 characters"}), 400
     all_data = load_all()
+    if "tokens" not in all_data:
+        all_data["tokens"] = {}
     if username in all_data["users"]:
         return jsonify({"error": "Username already taken!"}), 400
+    token = secrets.token_hex(32)
     all_data["users"][username] = {
         "password": hash_password(password),
         "player":   default_player(username)
     }
+    all_data["tokens"][token] = username
     save_all(all_data)
-    session["username"] = username
-    return jsonify({"message": f"Welcome to the System, {username}!", "player": all_data["users"][username]["player"]})
+    return jsonify({"message": f"Welcome to the System, {username}!", "token": token, "player": all_data["users"][username]["player"]})
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -128,39 +136,37 @@ def login():
     username = data.get("username", "").strip()
     password = data.get("password", "").strip()
     all_data = load_all()
+    if "tokens" not in all_data:
+        all_data["tokens"] = {}
     user = all_data["users"].get(username)
     if not user or user["password"] != hash_password(password):
         return jsonify({"error": "Wrong username or password!"}), 401
-    session["username"] = username
-    return jsonify({"message": f"Welcome back, {username}!", "player": user["player"]})
+    token = secrets.token_hex(32)
+    all_data["tokens"][token] = username
+    save_all(all_data)
+    return jsonify({"message": f"Welcome back, {username}!", "token": token, "player": user["player"]})
 
 @app.route("/logout", methods=["POST"])
 def logout():
-    session.pop("username", None)
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    all_data = load_all()
+    if "tokens" not in all_data:
+        all_data["tokens"] = {}
+    if token in all_data.get("tokens", {}):
+        del all_data["tokens"][token]
+        save_all(all_data)
     return jsonify({"message": "Logged out successfully"})
 
 @app.route("/player", methods=["GET"])
 def get_player():
-    username, all_data, player = get_current_player()
+    username, all_data, player = get_user_from_token()
     if not player:
         return jsonify({"error": "Not logged in"}), 401
     return jsonify(player)
 
-@app.route("/gain-xp", methods=["POST"])
-def gain_xp():
-    username, all_data, player = get_current_player()
-    if not player:
-        return jsonify({"error": "Not logged in"}), 401
-    amount = int(request.get_json().get("amount", 0))
-    old_level = player["level"]
-    player, leveled = apply_xp(player, amount)
-    all_data["users"][username]["player"] = player
-    save_all(all_data)
-    return jsonify({"message": f"Gained {amount} XP", "leveled_up": leveled, "old_level": old_level, "new_level": player["level"], "player": player})
-
 @app.route("/complete-quest/<int:quest_id>", methods=["POST"])
 def complete_quest(quest_id):
-    username, all_data, player = get_current_player()
+    username, all_data, player = get_user_from_token()
     if not player:
         return jsonify({"error": "Not logged in"}), 401
     quest = next((q for q in player["quests"] if q["id"] == quest_id), None)
@@ -176,7 +182,7 @@ def complete_quest(quest_id):
 
 @app.route("/reset-quests", methods=["POST"])
 def reset_quests():
-    username, all_data, player = get_current_player()
+    username, all_data, player = get_user_from_token()
     if not player:
         return jsonify({"error": "Not logged in"}), 401
     for quest in player["quests"]:
@@ -187,7 +193,7 @@ def reset_quests():
 
 @app.route("/allocate-stat", methods=["POST"])
 def allocate_stat():
-    username, all_data, player = get_current_player()
+    username, all_data, player = get_user_from_token()
     if not player:
         return jsonify({"error": "Not logged in"}), 401
     stat = request.get_json().get("stat", "").upper()
@@ -208,7 +214,6 @@ def allocate_stat():
     return jsonify({"message": f"{stat} increased to {player['stats'][stat]}!", "stat": stat, "new_value": player["stats"][stat], "player": player})
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     print("🌑 Solo Leveling System — Backend Running")
     app.run(debug=False, host="0.0.0.0", port=port)
